@@ -46,20 +46,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout);
-        appInfoListView = (ListView)this.findViewById(R.id.appinfo_list);
+
 
         initViews();
         updateUI(appInfos);
 
-        appInfoListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view,
-                                    int position, long id) {
-                AppInfo appInfo = appInfos.get(position);
-                Toast.makeText(MainActivity.this, appInfo.getAppVersionName()+"-"+appInfo.getAppVersionCode(getApplication()), Toast.LENGTH_SHORT).show();
-                startActivity(appInfo.appIntent);
-            }
-        });
 
     }
 
@@ -81,18 +72,16 @@ public class MainActivity extends AppCompatActivity {
          */
 
         for(PackageInfo packgeInfo : packgeInfos){
-            String appName = packgeInfo.applicationInfo.loadLabel(pm).toString();
-            String packageName = packgeInfo.packageName;
-            Drawable drawable = packgeInfo.applicationInfo.loadIcon(pm);
-            Intent appIntent = new Intent();
-            String appVersionCode = String.valueOf(packgeInfo.versionCode);
-            String appVersionName = packgeInfo.versionName;
 
-
-            AppInfo appInfo = new AppInfo(appName, packageName,drawable,appIntent,appVersionCode,appVersionName);
             if((packgeInfo.applicationInfo.flags& ApplicationInfo.FLAG_SYSTEM)==0){
-                // 获取该应用安装包的Intent，用于启动该应用
-                appInfo.appIntent = pm.getLaunchIntentForPackage(packgeInfo.packageName);
+                String appName = packgeInfo.applicationInfo.loadLabel(pm).toString();
+                String packageName = packgeInfo.packageName;
+                Drawable drawable = packgeInfo.applicationInfo.loadIcon(pm);
+                Intent appIntent = pm.getLaunchIntentForPackage(packgeInfo.packageName);// 获取该应用安装包的Intent，用于启动该应用
+                String appVersionCode = String.valueOf(packgeInfo.versionCode);
+                String appVersionName = packgeInfo.versionName;
+
+                AppInfo appInfo = new AppInfo(appName, packageName,drawable,appIntent,appVersionCode,appVersionName);
 
                 //汉字转换成拼音
                 String pinyin = characterParser.getSelling(appName);
@@ -137,6 +126,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        appInfoListView = (ListView)this.findViewById(R.id.appinfo_list);
+        appInfoListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view,
+                                    int position, long id) {
+                AppInfo appInfo = appInfos.get(position);
+                Toast.makeText(MainActivity.this, appInfo.getAppVersionName()+"-"+appInfo.getAppVersionCode(getApplication()), Toast.LENGTH_SHORT).show();
+                startActivity(appInfo.appIntent);
+            }
+        });
+
+
         appInfos = getAppInfos();
 
         // 根据a-z进行排序源数据
@@ -154,6 +155,7 @@ public class MainActivity extends AppCompatActivity {
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 //当输入框里面的值为空，更新为原来的列表，否则为过滤数据列表
                 filterData(s.toString());
+
             }
 
             @Override
@@ -213,7 +215,10 @@ public class MainActivity extends AppCompatActivity {
             filterDateList.clear();
             for(AppInfo sortModel : appInfos){
                 String name = sortModel.getAppName();
+                Intent intent = sortModel.appIntent;
                 if(name.indexOf(filterStr.toString()) != -1 || characterParser.getSelling(name).startsWith(filterStr.toString())){
+                    sortModel.appIntent = intent;
+                    Log.i("aaaaaaa",intent.toString());
                     filterDateList.add(sortModel);
                 }
             }
@@ -222,6 +227,18 @@ public class MainActivity extends AppCompatActivity {
         // 根据a-z进行排序
         Collections.sort(filterDateList, pinyinComparator);
         infosAdapter.updateListView(filterDateList);
+        appInfoListView = (ListView)this.findViewById(R.id.appinfo_list);
+        final List<AppInfo> finalFilterDateList = filterDateList;
+        appInfoListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view,
+                                    int position, long id) {
+                AppInfo appInfo = finalFilterDateList.get(position);
+                Toast.makeText(MainActivity.this, appInfo.getAppVersionName()+"-"+appInfo.getAppVersionCode(getApplication()), Toast.LENGTH_SHORT).show();
+                startActivity(appInfo.appIntent);
+            }
+        });
+
     }
 
 }
